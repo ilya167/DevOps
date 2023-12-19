@@ -1,0 +1,25 @@
+version: '3'
+services:
+  clickhouse:
+    image: il167/clickhouse-server
+    ports:
+      - "8123:8123" # HTTP-порт для запросов к ClickHouse
+      - "9000:9000" # Native-порт для запросов к ClickHouse
+  redis:
+    image: redis
+    container_name: "redis-server"
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server"]
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-ui
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+      - HTTP_USER=admin
+      - HTTP_PASSWORD=admin
+    ports:
+      - 8081:8081
+    depends_on:
+      - redis
