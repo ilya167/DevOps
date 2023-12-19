@@ -5,10 +5,13 @@ from clickhouse_driver import Client
 import requests
 import logging
 
-
+# Настройки подключения к Redis
 redis_client = redis.Redis(host='localhost', port='6379', db=0, password='')
+
+# Настройки подключения к ClickHouse
 ch_client = Client(host='localhost', port='9000', user='default', password= '')
 
+# Читаем задачу из очереди Redis
 def process_queue():
     while True:
         task = redis_client.blpop('search_queue')
@@ -18,6 +21,7 @@ def process_queue():
         mac = task_data['mac']
         search(ipv4, mac)
         
+# Отправляем JSON во внешний сервис       
 def pastebin_upload(user):
     data = {
         'api_option': 'paste',
@@ -32,9 +36,8 @@ def pastebin_upload(user):
         logging.info(f'Successful search: {url}')
         print(user['username'] + ': ' + (r.content.decode('UTF-8')) + '\n')
     return r.content.decode('UTF-8')
-    
 
-
+# Подключаемся к ClickHouse
 def search_user(ipv4, mac):
     query = f"SELECT username, ipv4, mac FROM test_table WHERE ipv4 = '{ipv4}' AND mac = '{mac}'"
     try:
@@ -48,12 +51,14 @@ def search_user(ipv4, mac):
     except Exception as e:
         print("Error while searching username: {e}")
     return None
-
+    
+# Поиск в ClickHouse
 def search(ipv4, mac):
     user = search_user(ipv4, mac)
     url = pastebin_upload(user)
 
 print("Waiting for queue from redis")
+
 if __name__ == '__main__':
     num_threads = 4
     for _ in range(num_threads):
